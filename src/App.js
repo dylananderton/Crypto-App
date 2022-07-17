@@ -1,98 +1,57 @@
-import { useState, useEffect } from 'react';
-import { nanoid } from 'nanoid';
-import NotesList from './Notes/NotesList';
-import Search from './Notes/Search';
-import {BsFillMoonStarsFill, BsFillSunFill} from 'react-icons/bs'
-import UseDarkMode from './Notes/UseDarkMode';
+import React, { useEffect, useState } from 'react';
+import './App.css';
+import axios from 'axios'
+import Coin from './Crypto/Coin';
 
-const App = () => {
-	const [notes, setNotes] = useState([
-		{
-			id: nanoid(),
-			text: 'This is my first note!',
-			date: '05/05/2022',
-		},
-		{
-			id: nanoid(),
-			text: 'This is my second note!',
-			date: '06/05/2022',
-		},
-		{
-			id: nanoid(),
-			text: 'This is my third note!',
-			date: '15/05/2022',
-		},
-		{
-			id: nanoid(),
-			text: 'This is my new note!',
-			date: '25/05/2022',
-		},
-	]);
 
-	const [searchText, setSearchText] = useState('');
+function App() {
 
-	useEffect(() => {
-		const savedNotes = JSON.parse(
-			localStorage.getItem('react-notes-app-data')
-		);
+  const [coins,setCoins] = useState([])
+  const [search,setSearch] = useState('')
 
-		if (savedNotes) {
-			setNotes(savedNotes);
-		}
-	}, []);
+  useEffect(() => {
+    axios.get('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false')
+    .then(res=>{
+       setCoins(res.data)
+       console.log(res.data)
+    }).catch(error=>console.log(error))
+  }, [])
 
-	useEffect(() => {
-		localStorage.setItem(
-			'react-notes-app-data',
-			JSON.stringify(notes)
-		);
-	}, [notes]);
+  const handleChange = e =>{
+    setSearch(e.target.value)
+  }
 
-	const addNote = (text) => {
-		const date = new Date();
-		const newNote = {
-			id: nanoid(),
-			text: text,
-			date: date.toLocaleDateString(),
-		};
-		const newNotes = [...notes, newNote];
-		setNotes(newNotes);
-	};
+  const filteredCoins = coins.filter(coin=>
+    coin.name.toLowerCase().includes(search.toLowerCase())
+    )
 
-	const deleteNote = (id) => {
-		const newNotes = notes.filter((note) => note.id !== id);
-		setNotes(newNotes);
-	};
+  return (
+    <div className="coin-app">
+      <div className='container'>
+        <div className="coin-search">
+          <h1 className="coin-text">Crypto App</h1>
+          <form action="">
+            <input type="text" className="coin-input" placeholder="Search any coin" onChange={handleChange}/>
+          </form>
+        </div>
+      </div>
 
-	const [isDarkMode,setDarkMode] = UseDarkMode()
-
-	return (
-    	<div>
-			<div className='container'>
-				<div className='header'>
-					<h1 style={{color: isDarkMode?'#FAF9F6':'#28282B'}}><span className='my' style={{color: isDarkMode?'aquamarine':'#289D8C'}}>My</span>&nbsp;Notes</h1>
-					<button className="toggle_btn" onClick={()=>setDarkMode(!isDarkMode)} style={{backgroundColor: isDarkMode?'#28282B':'#FAF9F6'}}>
-						{isDarkMode? (
-							<BsFillSunFill size={'2em'} title="Switch to light mode" style={{color:"white"}}/>
-						) : (
-							<BsFillMoonStarsFill size={'2em'} title="Switch to dark mode" />
-						)}
-					</button>
-				</div>
-				<Search handleSearchNote={setSearchText} />
-				<NotesList
-					notes={notes.filter((note) =>
-						note.text.toLowerCase().includes(searchText)
-					)}
-					handleAddNote={addNote}
-					handleDeleteNote={deleteNote}
-				/>
-			</div>
-			<footer>
-				<a className='source-code' style={{color: isDarkMode?'rgb(233, 233, 233)':'#28282B'}} href="https://github.com/dylananderton/Notes" target="_blank" >See the source code</a>
-			</footer>
-		</div>
-	);
-};
+      {filteredCoins.map(coin=>{
+        return(
+          <Coin 
+          key={coin.id} 
+          name={coin.name} 
+          image={coin.image} 
+          symbol={coin.symbol}
+          marketcap={coin.market_cap}
+          price={coin.current_price}
+          pricechange={coin.price_change_percentage_24h}
+          />
+        );
+      })}
+      <a className='source-code container' href='https://github.com/dylananderton/Crypto-App' target='_blank'><p className='source-code-text'>See the source code</p></a>
+    </div>
+  );
+}
 
 export default App;
